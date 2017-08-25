@@ -28,6 +28,8 @@ server.post('/devices/:deviceId', function (inRequest, inResponse) {
 	var deviceId = inRequest.params.deviceId,
 		command = inRequest.body.command;
 
+	console.log(`POST request received for ${deviceId}.${command}()`);
+
 	/* send the ir signal combination */
 	exec(`irsend SEND_ONCE ${deviceId} ${command}`)
 		.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
