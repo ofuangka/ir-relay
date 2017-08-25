@@ -2,7 +2,6 @@ if (process.argv.length < 3) {
 	console.log(`Usage: node ${__filename} PORT`);
 	process.exit(-1);
 }
-const PAUSE_TIME_MS = 1000;
 
 var express = require('express'),
 	http = require('http'),
@@ -10,12 +9,6 @@ var express = require('express'),
 	port = process.argv[2],
 	server = express();
 
-function waitFor(ms) {
-	return new Promise((resolve, reject) => setTimeout(resolve, ms));
-}
-function pause() {
-	return waitFor(PAUSE_TIME_MS);
-}
 function exec(command) {
 	return new Promise((resolve, reject) => {
 		execWithCallback(command, (error, stdout, stderr) => {
@@ -28,19 +21,17 @@ function exec(command) {
 				resolve(stdout);
 			}
 		});
-	})
+	});
 }
 
-server.post('/', function (inRequest, inResponse) {
-	var command = inRequest.body;
-	
-	/* immediately reply (this might take a while) */
-	inResponse.send(JSON.stringify({ code: 200, message: '200 OK' }));
+server.post('/devices/:deviceId', function (inRequest, inResponse) {
+	var deviceId = inRequest.params.deviceId,
+		command = inRequest.body.command;
 
 	/* send the ir signal combination */
-	exec('irsend SEND_ONCE Sharp KEY_POWER')
-		.then(pause)
-		.catch(error => `irsend error: ${JSON.stringify(error)}`);
+	exec(`irsend SEND_ONCE ${deviceId} ${command}`)
+		.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
+		.catch(error => inResponse.status(500).send(JSON.stringify(error)));
 });
 
 http.createServer(server).listen(port);
