@@ -24,7 +24,7 @@ function exec(command) {
 	});
 }
 
-server.put('/receiver/:receiverId/command', function (inRequest, inResponse) {
+server.put('/receivers/:receiverId/command', function (inRequest, inResponse) {
 	var receiverId = inRequest.params.receiverId,
 		key = inRequest.body.key;
 
