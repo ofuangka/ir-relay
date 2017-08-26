@@ -24,14 +24,14 @@ function exec(command) {
 	});
 }
 
-server.post('/devices/:deviceId', function (inRequest, inResponse) {
-	var deviceId = inRequest.params.deviceId,
-		command = inRequest.body.command;
+server.put('/receiver/:receiverId/command', function (inRequest, inResponse) {
+	var receiverId = inRequest.params.receiverId,
+		key = inRequest.body.key;
 
-	console.log(`POST request received for ${deviceId}.${command}()`);
+	console.log(`PUT request received for ${receiverId}.${key}()`);
 
 	/* send the ir signal combination */
-	exec(`irsend SEND_ONCE ${deviceId} ${command}`)
+	exec(`irsend SEND_ONCE ${receiverId} ${key}`)
 		.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
 		.catch(error => inResponse.status(500).send(JSON.stringify(error)));
 });
