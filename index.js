@@ -5,6 +5,7 @@ if (process.argv.length < 3) {
 
 var express = require('express'),
 	http = require('http'),
+	bodyParser = require('body-parser'),
 	execWithCallback = require('child_process').exec,
 	port = process.argv[2],
 	server = express();
@@ -23,6 +24,9 @@ function exec(command) {
 		});
 	});
 }
+
+server.use(bodyParser.json());
+server.use(bodyParser.urlencoded({ extended: true }));
 
 server.put('/receivers/:receiverId/command', function (inRequest, inResponse) {
 	var receiverId = inRequest.params.receiverId,
