@@ -1,5 +1,5 @@
 if (process.argv.length < 3) {
-	console.log(`Usage: node ${__filename} PORT`);
+	console.log(`Usage: node ${__filename} LISTEN_PORT`);
 	process.exit(-1);
 }
 
