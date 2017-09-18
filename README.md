@@ -16,4 +16,4 @@ The following command will create the .env file containing configuration variabl
     node index.js
 
 ### Example
-    curl http://localhost:9090/receivers/Living_Room_TV/command/KEY_POWER
+    curl -H "Content-Type: application/json" -d '{"key": "KEY_POWER"}' http://localhost:9090/receivers/Living_Room_TV/commands
