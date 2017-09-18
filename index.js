@@ -33,8 +33,7 @@ function exec(command) {
 }
 
 function log() {
-    console.log.apply(console, Array.prototype.map.call(arguments, argument =>
-        typeof argument === 'object' ? JSON.stringify(argument) : argument));
+	console.log.apply(console, Array.prototype.map.call(arguments, argument => typeof argument === 'object' ? JSON.stringify(argument) : argument));
 }
 
 function verbose() {
@@ -45,23 +44,27 @@ function verbose() {
 
 server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
-server.post('/receivers/:receiverId/command', (inRequest, inResponse) => {
+server.post('/receivers/:receiverId/commands', (inRequest, inResponse) => {
 	var receiverId = inRequest.params.receiverId,
 		key = inRequest.body.key;
 	verbose(receiverId, key);
-	if (!RECEIVER_REGEX.test(receiverId) || !KEY_REGEX.test(key)) {
-		log('Invalid receiver/key', receiverId, key);
-		inResponse.status(400).send('Bad request');
-	} else {
+	if (receiverId && key) {
+		receiverId = receiverId.trim();
+		key = key.trim();
+		if (RECEIVER_REGEX.test(receiverId) && KEY_REGEX.test(key)) {
 
-		/* send the ir signal combination */
-		exec(`irsend SEND_START ${receiverId} ${key} && sleep ${holdTime}; irsend SEND_STOP ${receiverId} ${key}`)
-			.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
-			.catch(error => {
-				log('Execution error', error);
-				inResponse.status(500).send(JSON.stringify(error));
-			});
+			/* send the ir signal combination */
+			exec(`irsend SEND_START ${receiverId} ${key} && sleep ${holdTime}; irsend SEND_STOP ${receiverId} ${key}`)
+				.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
+				.catch(error => {
+					log('Execution error', error);
+					inResponse.status(500).send(JSON.stringify(error));
+				});
+				return;
+		}
 	}
+	log('Invalid receiver/key', receiverId, key);
+	inResponse.status(400).send('Bad request');
 });
 
 http.createServer(server).listen(port);
