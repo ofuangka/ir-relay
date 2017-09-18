@@ -1,18 +1,25 @@
-if (process.argv.length < 3) {
-	console.log(`Usage: node ${__filename} LISTEN_PORT`);
-	process.exit(-1);
+'use strict';
+
+/* load environment variables */
+var result = require('dotenv').config();
+if (result.error) {
+	throw result.error;
 }
 
-var express = require('express'),
-	http = require('http'),
+const RECEIVER_REGEX = /[A-Z][A-Z0-9_]*/i,
+	KEY_REGEX = /[A-Z][A-Z0-9_]*/;
+
+var http = require('http'),
 	bodyParser = require('body-parser'),
-	execWithCallback = require('child_process').exec,
-	port = process.argv[2],
-	server = express();
+	_exec = require('child_process').exec,
+	server = require('express').express(),
+	port = process.env.LISTEN_PORT || '9090',
+	isVerbose = process.env.IS_VERBOSE,
+	holdTime = parseFloat(process.env.HOLD_TIME || '0.375');
 
 function exec(command) {
 	return new Promise((resolve, reject) => {
-		execWithCallback(command, (error, stdout, stderr) => {
+		_exec(command, (error, stdout, stderr) => {
 			if (error) {
 				reject({
 					error: error,
@@ -25,20 +32,37 @@ function exec(command) {
 	});
 }
 
+function log() {
+    console.log.apply(console, Array.prototype.map.call(arguments, argument =>
+        typeof argument === 'object' ? JSON.stringify(argument) : argument));
+}
+
+function verbose() {
+	if (isVerbose) {
+		log.apply(null, arguments);
+	}
+}
+
 server.use(bodyParser.json());
 server.use(bodyParser.urlencoded({ extended: true }));
-
-server.put('/receivers/:receiverId/command', function (inRequest, inResponse) {
+server.post('/receivers/:receiverId/command', (inRequest, inResponse) => {
 	var receiverId = inRequest.params.receiverId,
 		key = inRequest.body.key;
+	verbose(receiverId, key);
+	if (!RECEIVER_REGEX.test(receiverId) || !KEY_REGEX.test(key)) {
+		log('Invalid receiver/key', receiverId, key);
+		inResponse.status(400).send('Bad request');
+	} else {
 
-	console.log(`PUT request received for ${receiverId}.${key}()`);
-
-	/* send the ir signal combination */
-	exec(`irsend SEND_ONCE ${receiverId} ${key}`)
-		.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
-		.catch(error => inResponse.status(500).send(JSON.stringify(error)));
+		/* send the ir signal combination */
+		exec(`irsend SEND_START ${receiverId} ${key} && sleep ${holdTime}; irsend SEND_STOP ${receiverId} ${key}`)
+			.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
+			.catch(error => {
+				log('Execution error', error);
+				inResponse.status(500).send(JSON.stringify(error));
+			});
+	}
 });
 
 http.createServer(server).listen(port);
-console.log(`Server listening on port ${port}`);
+log(`Server listening on port ${port}`);
