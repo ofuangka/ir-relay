@@ -55,16 +55,16 @@ server.post('/receivers/:receiverId/commands', (inRequest, inResponse) => {
 
 			/* send the ir signal combination */
 			exec(`irsend SEND_START ${receiverId} ${key} && sleep ${holdTime}; irsend SEND_STOP ${receiverId} ${key}`)
-				.then(result => inResponse.status(200).send())
+				.then(result => inResponse.status(200).send(JSON.stringify({ message: 'Success' })))
 				.catch(error => {
 					log('Execution error', error);
-					inResponse.status(500).send();
+					inResponse.status(500).send(JSON.stringify({ message: error }));
 				});
 			return;
 		}
 	}
 	log('Invalid receiver/key', receiverId, key);
-	inResponse.status(400).send();
+	inResponse.status(400).send(JSON.stringify({ message: 'Bad request' }));
 });
 
 http.createServer(server).listen(port);
