@@ -53,14 +53,14 @@ server.post('/receivers/:receiverId/commands', (inRequest, inResponse) => {
 		key = key.trim();
 		if (RECEIVER_REGEX.test(receiverId) && KEY_REGEX.test(key)) {
 
-			/* just reply immediately */
-			inResponse.status(200).send();
-
 			/* send the ir signal combination */
 			exec(`irsend SEND_START ${receiverId} ${key} && sleep ${holdTime}; irsend SEND_STOP ${receiverId} ${key}`)
-				.then(result => verbose(result))
-				.catch(error => log('Execution error', error));
-				return;
+				.then(result => inResponse.status(200).send())
+				.catch(error => {
+					log('Execution error', error);
+					inResponse.status(500).send();
+				});
+			return;
 		}
 	}
 	log('Invalid receiver/key', receiverId, key);
