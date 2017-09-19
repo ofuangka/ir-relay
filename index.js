@@ -1,6 +1,5 @@
 'use strict';
 
-/* load environment variables */
 var result = require('dotenv').config();
 if (result.error) {
 	throw result.error;
@@ -23,6 +22,7 @@ function exec(command) {
 			if (error) {
 				reject({
 					error: error,
+					stdout: stdout,
 					stderr: stderr
 				});
 			} else {
@@ -53,18 +53,18 @@ server.post('/receivers/:receiverId/commands', (inRequest, inResponse) => {
 		key = key.trim();
 		if (RECEIVER_REGEX.test(receiverId) && KEY_REGEX.test(key)) {
 
+			/* just reply immediately */
+			inResponse.status(200).send();
+
 			/* send the ir signal combination */
 			exec(`irsend SEND_START ${receiverId} ${key} && sleep ${holdTime}; irsend SEND_STOP ${receiverId} ${key}`)
-				.then(result => inResponse.status(200).send(JSON.stringify({ result: result })))
-				.catch(error => {
-					log('Execution error', error);
-					inResponse.status(500).send(JSON.stringify(error));
-				});
+				.then(result => verbose(result))
+				.catch(error => log('Execution error', error));
 				return;
 		}
 	}
 	log('Invalid receiver/key', receiverId, key);
-	inResponse.status(400).send('Bad request');
+	inResponse.status(400).send();
 });
 
 http.createServer(server).listen(port);
